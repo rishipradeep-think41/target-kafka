@@ -1,0 +1,64 @@
+send_anonymous_usage_stats: true
+project_id: "target-kafka"
+default_environment: test
+requires_meltano: ">=4.0"
+environments:
+- name: test
+plugins:
+  extractors:
+  - name: tap-smoke-test
+    variant: meltano
+    pip_url: git+https://github.com/meltano/tap-smoke-test.git
+    config:
+      streams:
+      - stream_name: animals
+        input_filename: https://raw.githubusercontent.com/meltano/tap-smoke-test/main/demo-data/animals-data.jsonl
+
+  loaders:
+  - name: "target-kafka"
+    namespace: "target_kafka"
+    pip_url: -e .
+    capabilities:
+    - about
+    - stream-maps
+    - schema-flattening
+    - structured-logging
+
+    settings:
+    - name: bootstrap_servers
+      kind: string
+      label: Bootstrap Servers
+      description: Kafka bootstrap servers (comma-separated, e.g., localhost:9092,localhost:9093)
+      required: true
+
+    - name: topic_prefix
+      kind: string
+      label: Topic Prefix
+      description: Optional prefix to add to all topic names
+      value: ""
+
+    - name: key_properties
+      kind: array
+      label: Key Properties
+      description: Record properties to use as Kafka message key (empty = round-robin partition assignment)
+      value: []
+
+    - name: batch_size
+      kind: integer
+      label: Batch Size
+      description: Number of records to batch before sending to Kafka
+      value: 100
+
+    - name: compression_type
+      kind: string
+      label: Compression Type
+      description: Kafka message compression type
+      value: snappy
+
+    - name: include_sdc_properties
+      kind: boolean
+      label: Include SDC Properties
+      description: Include Meltano-specific metadata (_sdc_extracted_at, _sdc_received_at, etc.)
+      value: true
+
+    settings_group_validation: []
