@@ -9,8 +9,10 @@ from singer_sdk.testing import get_target_test_class
 
 from target_kafka.target import TargetKafka
 
-# TODO: Initialize minimal target config
-SAMPLE_CONFIG: dict[str, t.Any] = {}
+# Minimal config for standard SDK tests (KafkaProducer is mocked in conftest.py)
+SAMPLE_CONFIG: dict[str, t.Any] = {
+    "bootstrap_servers": "localhost:9092",
+}
 
 
 # Run standard built-in target tests from the SDK:
@@ -36,4 +38,3 @@ class TestTargetKafka(StandardTargetTests):  # type: ignore[misc, valid-type]
         return "resource"
 
 
-# TODO: Create additional tests as appropriate for your target.

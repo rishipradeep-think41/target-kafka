@@ -50,10 +50,21 @@ plugins:
       value: 100
 
     - name: compression_type
-      kind: string
+      kind: options
       label: Compression Type
       description: Kafka message compression type
       value: snappy
+      options:
+      - label: None
+        value: none
+      - label: Gzip
+        value: gzip
+      - label: Snappy
+        value: snappy
+      - label: LZ4
+        value: lz4
+      - label: Zstandard
+        value: zstd
 
     - name: include_sdc_properties
       kind: boolean

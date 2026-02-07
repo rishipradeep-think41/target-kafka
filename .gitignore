@@ -1,6 +1,12 @@
 # Secrets and internal config files
 .secrets/*
 
+# docs
+docs/
+
+# local kafka
+kafka/
+
 # Ignore meltano internal cache and sqlite systemdb
 
 .meltano/

@@ -1,12 +1,12 @@
-# src/target_kafka/sinks.py
+"""Kafka batch sink for the Singer target."""
 
 from __future__ import annotations
 
 import json
 
-from singer_sdk.sinks import BatchSink
 from kafka import KafkaProducer
 from kafka.errors import KafkaError
+from singer_sdk.sinks import BatchSink
 
 
 class KafkaSink(BatchSink):
@@ -70,8 +70,14 @@ class KafkaSink(BatchSink):
         compression_type = self.config.get("compression_type", "snappy")
 
         try:
+            servers = [s.strip() for s in bootstrap_servers.split(",") if s.strip()]
+            if not servers:
+                raise ValueError(
+                    "bootstrap_servers must contain at least one broker "
+                    "(e.g. localhost:9092)"
+                )
             self.producer = KafkaProducer(
-                bootstrap_servers=bootstrap_servers.split(","),
+                bootstrap_servers=servers,
                 compression_type=compression_type,
                 acks="all",  # Wait for all in-sync replicas to acknowledge
                 retries=3,
@@ -145,11 +151,9 @@ class KafkaSink(BatchSink):
         if self.producer is None:
             self._init_producer()
 
-        # Add Meltano metadata if configured
-        if self.config.get("include_sdc_properties", True):
-            # These are already added by Meltano, but ensuring they are present
-            if "_sdc_extracted_at" not in record and hasattr(context, "get"):
-                record["_sdc_extracted_at"] = context.get("_sdc_extracted_at")
+        # Optionally strip Singer/Meltano metadata before sending
+        if not self.config.get("include_sdc_properties", True):
+            record = {k: v for k, v in record.items() if not k.startswith("_sdc")}
 
         self._batch.append(record)
 
@@ -194,12 +198,10 @@ class KafkaSink(BatchSink):
         try:
             for record in self._batch:
                 message_key = self._get_message_key(record)
-                # Note: value_serializer handles JSON encoding
-
                 self.producer.send(
                     self.topic_name,
-                    value=record,  # Serializer will handle JSON encoding
-                    key=message_key,  # Serializer will handle if bytes needed
+                    value=record,
+                    key=message_key,
                 )
 
             # Wait for all pending sends to complete
@@ -238,11 +240,7 @@ class KafkaSink(BatchSink):
             return
 
         try:
-            # Final flush of any pending records
             self._flush_batch()
-
-            # Close producer
-            self.producer.flush(timeout=30)
             self.producer.close(timeout=30)
 
             self.logger.info(

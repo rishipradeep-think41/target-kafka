@@ -1,12 +1,6 @@
 # target-kafka
 
-`target-kafka` is a Singer target for Kafka.
-
-Build with the [Meltano Target SDK](https://sdk.meltano.com).
-
-<!--
-
-Developer TODO: Update the below as needed to correctly describe the install procedure. For instance, if you do not have a PyPI repo, or if you want users to directly install from your git repo, you can modify this step as appropriate.
+`target-kafka` is a [Singer](https://hub.meltano.com/singer/spec) target for Apache Kafka, built with the [Meltano Singer SDK](https://sdk.meltano.com). It writes tap output to Kafka topics (one topic per stream) with configurable batching, compression, and message keys. Delivery is **at-least-once**: on failure, records may be retried and duplicates are possible.
 
 ## Installation
 
@@ -16,30 +10,28 @@ Install from PyPI:
 uv tool install target-kafka
 ```
 
-Install from GitHub:
+Install from GitHub (replace `your-org` with your GitHub org or username):
 
 ```bash
-uv tool install git+https://github.com/ORG_NAME/target-kafka.git@main
+uv tool install git+https://github.com/your-org/target-kafka.git@main
 ```
 
--->
+**Publishing:** To publish to PyPI and add this loader to [Meltano Hub](https://hub.meltano.com), see [docs/PUBLISHING.md](docs/PUBLISHING.md).
 
 ## Configuration
 
-### Accepted Config Options
+### Accepted config options
 
-<!--
-Developer TODO: Provide a list of config options accepted by the target.
+| Setting | Required | Default | Description |
+|:--------|:--------:|:-------:|:------------|
+| bootstrap_servers | Yes | — | Kafka bootstrap servers (comma-separated, e.g. `localhost:9092,localhost:9093`) |
+| topic_prefix | No | `""` | Prefix to add to all topic names |
+| key_properties | No | `[]` | Record properties to use as Kafka message key (empty = round-robin partition) |
+| batch_size | No | `100` | Number of records to batch before sending to Kafka |
+| compression_type | No | `snappy` | Kafka message compression: `none`, `gzip`, `snappy`, `lz4`, `zstd` |
+| include_sdc_properties | No | `true` | Include Meltano metadata (`_sdc_extracted_at`, `_sdc_received_at`, etc.) |
 
-This section can be created by copy-pasting the CLI output from:
-
-```
-target-kafka --about --format=markdown
-```
--->
-
-A full list of supported settings and capabilities for this
-target is available by running:
+A full list of supported settings and capabilities is available by running:
 
 ```bash
 target-kafka --about
@@ -47,84 +39,56 @@ target-kafka --about
 
 ### Configure using environment variables
 
-This Singer target will automatically import any environment variables within the working directory's
-`.env` if the `--config=ENV` is provided, such that config values will be considered if a matching
-environment variable is set either in the terminal context or in the `.env` file.
-
-### Authentication and Authorization
-
-<!--
-Developer TODO: If your target requires special access on the destination system, or any special authentication requirements, provide those here.
--->
+With `--config=ENV`, the target reads configuration from environment variables (and from a `.env` file in the working directory if present). Use names like `TARGET_KAFKA_BOOTSTRAP_SERVERS`, `TARGET_KAFKA_TOPIC_PREFIX`, etc. See `.env.example` for a template.
 
 ## Usage
 
-You can easily run `target-kafka` by itself or in a pipeline using [Meltano](https://meltano.com/).
+### Run with Meltano
 
-### Executing the Target Directly
+You can run `target-kafka` in a pipeline using [Meltano](https://meltano.com/):
+
+```bash
+meltano run tap-smoke-test target-kafka
+```
+
+### Run the target directly
 
 ```bash
 target-kafka --version
 target-kafka --help
-# Test using the "Smoke Test" tap:
-tap-smoke-test | target-kafka --config /path/to/target-kafka-config.json
+
+# Example with config file
+tap-smoke-test | target-kafka --config config.json
+
+# Example with env config
+tap-smoke-test | target-kafka --config ENV
 ```
 
-## Developer Resources
+This target works in any Singer environment and does not require Meltano.
 
-Follow these instructions to contribute to this project.
+## Developer resources
 
-### Initialize your Development Environment
-
-Prerequisites:
+### Prerequisites
 
 - Python 3.10+
 - [uv](https://docs.astral.sh/uv/)
 
+### Setup and tests
+
 ```bash
 uv sync
-```
-
-### Create and Run Tests
-
-Create tests within the `tests` subfolder and
-then run:
-
-```bash
 uv run pytest
-```
-
-You can also test the `target-kafka` CLI interface directly using `uv run`:
-
-```bash
 uv run target-kafka --help
 ```
 
-### Testing with [Meltano](https://meltano.com/)
-
-_**Note:** This target will work in any Singer environment and does not require Meltano.
-Examples here are for convenience and to streamline end-to-end orchestration scenarios._
-
-<!--
-Developer TODO:
-Your project comes with a custom `meltano.yml` project file already created. Open the `meltano.yml` and follow any "TODO" items listed in
-the file.
--->
-
-Use Meltano to run an EL pipeline:
+### Testing with Meltano
 
 ```bash
-# Install meltano
 uv tool install meltano
-
-# Test invocation
 meltano invoke target-kafka --version
-
-# Run a test EL pipeline
 meltano run tap-smoke-test target-kafka
 ```
 
-### SDK Dev Guide
+### SDK dev guide
 
-See the [dev guide](https://sdk.meltano.com/en/latest/dev_guide.html) for more instructions on how to use the Meltano Singer SDK to
-develop your own Singer taps and targets.
+See the [Singer SDK dev guide](https://sdk.meltano.com/en/latest/dev_guide.html) for developing taps and targets.
