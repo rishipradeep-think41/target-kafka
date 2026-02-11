@@ -1,7 +1,7 @@
 # Secrets and internal config files
 .secrets/*
 
-# docs
+# docs (private; not published)
 docs/
 
 # local kafka

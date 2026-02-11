@@ -16,7 +16,7 @@ Install from GitHub (replace `your-org` with your GitHub org or username):
 uv tool install git+https://github.com/your-org/target-kafka.git@main
 ```
 
-**Publishing:** To publish to PyPI and add this loader to [Meltano Hub](https://hub.meltano.com), see [docs/PUBLISHING.md](docs/PUBLISHING.md).
+**Publishing:** To publish to PyPI and add this loader to [Meltano Hub](https://hub.meltano.com), see [docs/PUBLISHING.md](docs/PUBLISHING.md). For version bumps and release steps, see [docs/RELEASING.md](docs/RELEASING.md).
 
 ## Configuration
 

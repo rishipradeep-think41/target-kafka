@@ -3,10 +3,21 @@
 from __future__ import annotations
 
 import json
+from typing import Any
 
 from kafka import KafkaProducer
 from kafka.errors import KafkaError
+from pydantic import TypeAdapter
 from singer_sdk.sinks import BatchSink
+
+# Pydantic v2: record/key → JSON-serializable. Unsupported types will raise.
+_JSON_ADAPTER = TypeAdapter(Any)
+
+
+def _to_json_bytes(obj: Any) -> bytes:
+    """Serialize to JSON bytes via Pydantic. Unsupported types raise."""
+    serializable = _JSON_ADAPTER.dump_python(obj, mode="json")
+    return json.dumps(serializable).encode("utf-8")
 
 
 class KafkaSink(BatchSink):
@@ -83,14 +94,9 @@ class KafkaSink(BatchSink):
                 retries=3,
                 linger_ms=10,  # Wait up to 10ms to batch messages
                 value_serializer=lambda v: (
-                    v if isinstance(v, bytes)
-                    else json.dumps(v).encode("utf-8")
+                    v if isinstance(v, bytes) else _to_json_bytes(v)
                 ),
-                key_serializer=lambda k: (
-                    k if isinstance(k, bytes)
-                    else json.dumps(k).encode("utf-8") if k
-                    else None
-                ),
+                key_serializer=lambda k: k.encode("utf-8") if k else None,
             )
             self.logger.info(
                 f"KafkaProducer initialized for bootstrap_servers: "
@@ -126,8 +132,9 @@ class KafkaSink(BatchSink):
                     f"'{self.stream_name}'. Record: {record}"
                 )
 
-        # Return JSON-serialized key (serializer handles bytes conversion)
-        return json.dumps(key_values, sort_keys=True, default=str)
+        # Return JSON-serialized key (Pydantic handles datetime, Decimal, etc.)
+        serializable = _JSON_ADAPTER.dump_python(key_values, mode="json")
+        return json.dumps(serializable, sort_keys=True)
 
     def start_batch(self, context: dict) -> None:
         """Start a new batch.
